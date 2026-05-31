@@ -1,10 +1,23 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <map>
+#include <vector>
 #include <unordered_set>
+#include <sstream>
 #include <cctype>
 
-std::string apvalytiZodi(std::string zodis) {
+std::string isvalytiZodi(const std::string& originalusZodis) {
+    std::string isvalytas = "";
+    for (char c : originalusZodis) {
+        if (std::isalnum(c)) {
+            isvalytas += std::tolower(c);
+        }
+    }
+    return isvalytas;
+}
+
+std::string apvalytiZodiDelURL(std::string zodis) {
     while (!zodis.empty() && (zodis.back() == ',' || zodis.back() == '.' || zodis.back() == ';' || zodis.back() == ')' || zodis.back() == ']' || zodis.back() == '"' || zodis.back() == '/' || zodis.back() == '!')) {
         zodis.pop_back();
     }
@@ -31,7 +44,7 @@ bool arTaiURL(const std::string& zodis, const std::unordered_set<std::string>& t
         
         if (tldSarasas.count(tld) > 0) {
             for (size_t i = 0; i < paskutinisTaskas; ++i) {
-                if (std::iswalpha(zodis[i]) && zodis[i] < 0) {
+                if (zodis[i] < 0) {
                     return false;
                 }
             }
@@ -44,7 +57,7 @@ bool arTaiURL(const std::string& zodis, const std::unordered_set<std::string>& t
 int main() {
     std::ifstream tldFailas("galunes.txt");
     if (!tldFailas) {
-        std::cerr << "Klaida: nerastas tld.txt failas!" << std::endl;
+        std::cerr << "Klaida: nerastas galunes.txt failas!" << std::endl;
         return 1;
     }
 
@@ -61,23 +74,62 @@ int main() {
         return 1;
     }
 
-    std::ofstream isvestis("url_adresai.txt");
-    if (!isvestis) {
-        std::cerr << "Klaida: nepavyko sukurti url_adresai.txt!" << std::endl;
+    std::map<std::string, std::vector<int>> zodziuZodynas;
+    std::vector<std::string> rastiUrlai;
+    std::string eilute;
+    int eilutesNumeris = 0;
+
+    while (std::getline(ivestis, eilute)) {
+        eilutesNumeris++;
+        std::stringstream ss(eilute);
+        std::string nuskaitytasZodis;
+        
+        while (ss >> nuskaitytasZodis) {
+            std::string urlIsvalytas = apvalytiZodiDelURL(nuskaitytasZodis);
+            if (arTaiURL(urlIsvalytas, tldSarasas)) {
+                rastiUrlai.push_back(urlIsvalytas);
+            }
+
+            std::string svarusZodis = isvalytiZodi(nuskaitytasZodis);
+            if (!svarusZodis.empty()) {
+                zodziuZodynas[svarusZodis].push_back(eilutesNumeris);
+            }
+        }
+    }
+    ivestis.close();
+
+    std::ofstream isvestis1("pasikartojimai.txt");
+    std::ofstream isvestis2("cross_reference.txt");
+    std::ofstream isvestis3("url_adresai.txt");
+
+    if (!isvestis1 || !isvestis2 || !isvestis3) {
+        std::cerr << "Klaida: Nepavyko sukurti rezultatu failu!" << std::endl;
         return 1;
     }
 
-    std::string nuskaitytasZodis;
-    while (ivestis >> nuskaitytasZodis) {
-        std::string isvalytas = apvalytiZodi(nuskaitytasZodis);
-        if (arTaiURL(isvalytas, tldSarasas)) {
-            isvestis << isvalytas << "\n";
+    for (const auto& pora : zodziuZodynas) {
+        if (pora.second.size() > 1) {
+            isvestis1 << pora.first << " : " << pora.second.size() << "\n";
+
+            isvestis2 << pora.first << " : ";
+            for (size_t i = 0; i < pora.second.size(); ++i) {
+                isvestis2 << pora.second[i];
+                if (i < pora.second.size() - 1) {
+                    isvestis2 << ", ";
+                }
+            }
+            isvestis2 << "\n";
         }
     }
 
-    ivestis.close();
-    isvestis.close();
+    for (const auto& url : rastiUrlai) {
+        isvestis3 << url << "\n";
+    }
 
-    std::cout << "Darbas baigtas!" << std::endl;
+    isvestis1.close();
+    isvestis2.close();
+    isvestis3.close();
+
+    std::cout << "Darbas baigtas." << std::endl;
     return 0;
 }
