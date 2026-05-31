@@ -31,6 +31,7 @@ int main() {
         eilutesNumeris++;
         std::stringstream ss(eilute);
         std::string nuskaitytasZodis;
+        
         while (ss >> nuskaitytasZodis) {
             std::string svarusZodis = isvalytiZodi(nuskaitytasZodis);
             if (!svarusZodis.empty()) {
@@ -40,25 +41,31 @@ int main() {
     }
     ivestis.close();
 
-    std::ofstream isvestis("rezultatai.txt");
-    if (!isvestis) {
-        std::cerr << "Klaida: Nepavyko sukurti rezultatai.txt failo!" << std::endl;
+    std::ofstream isvestis1("pasikartojimai.txt");
+    std::ofstream isvestis2("cross_reference.txt");
+
+    if (!isvestis1 || !isvestis2) {
+        std::cerr << "Klaida: Nepavyko sukurti rezultatu failu!" << std::endl;
         return 1;
     }
 
     for (const auto& pora : zodziuZodynas) {
         if (pora.second.size() > 1) {
-            isvestis << pora.first << " : ";
+            isvestis1 << pora.first << " : " << pora.second.size() << "\n";
+
+            isvestis2 << pora.first << " : ";
             for (size_t i = 0; i < pora.second.size(); ++i) {
-                isvestis << pora.second[i];
+                isvestis2 << pora.second[i];
                 if (i < pora.second.size() - 1) {
-                    isvestis << ", ";
+                    isvestis2 << ", ";
                 }
             }
-            isvestis << "\n";
+            isvestis2 << "\n";
         }
     }
-    isvestis.close();
+
+    isvestis1.close();
+    isvestis2.close();
 
     std::cout << "Darbas baigtas!" << std::endl;
     return 0;
