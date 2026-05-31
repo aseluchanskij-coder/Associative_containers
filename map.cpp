@@ -1,72 +1,79 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <map>
-#include <vector>
-#include <sstream>
+#include <unordered_set>
 #include <cctype>
 
-std::string isvalytiZodi(const std::string& originalusZodis) {
-    std::string isvalytas = "";
-    for (char c : originalusZodis) {
-        if (std::isalnum(c)) {
-            isvalytas += std::tolower(c);
+std::string apvalytiZodi(std::string zodis) {
+    while (!zodis.empty() && (zodis.back() == ',' || zodis.back() == '.' || zodis.back() == ';' || zodis.back() == ')' || zodis.back() == ']' || zodis.back() == '"')) {
+        zodis.pop_back();
+    }
+    while (!zodis.empty() && (zodis.front() == '(' || zodis.front() == '[' || zodis.front() == '"')) {
+        zodis.erase(0, 1);
+    }
+    return zodis;
+}
+
+bool arTaiURL(const std::string& zodis, const std::unordered_set<std::string>& tldSarasas) {
+    size_t pradziosIndeksas = 0;
+    size_t protokolas = zodis.find("://");
+    if (protokolas != std::string::npos) {
+        pradziosIndeksas = protokolas + 3;
+    }
+
+    size_t pirmoSlesoIndeksas = zodis.find('/', pradziosIndeksas);
+    std::string domenas = zodis.substr(0, pirmoSlesoIndeksas);
+
+    size_t paskutinisTaskas = domenas.find_last_of('.');
+    if (paskutinisTaskas != std::string::npos && paskutinisTaskas > pradziosIndeksas) {
+        std::string tld = domenas.substr(paskutinisTaskas + 1);
+        for (char& c : tld) {
+            c = std::toupper(c);
+        }
+        if (tldSarasas.count(tld) > 0) {
+            return true;
         }
     }
-    return isvalytas;
+    return false;
 }
 
 int main() {
+    std::ifstream tldFailas("galunes.txt");
+    if (!tldFailas) {
+        std::cerr << "Klaida: nerastas tld.txt failas!" << std::endl;
+        return 1;
+    }
+
+    std::unordered_set<std::string> tldSarasas;
+    std::string tld;
+    while (tldFailas >> tld) {
+        tldSarasas.insert(tld);
+    }
+    tldFailas.close();
+
     std::ifstream ivestis("tekstas.txt");
     if (!ivestis) {
-        std::cerr << "Klaida: Nepavyko atidaryti tekstas.txt failo!" << std::endl;
+        std::cerr << "Klaida: nerastas tekstas.txt failas!" << std::endl;
         return 1;
     }
 
-    std::map<std::string, std::vector<int>> zodziuZodynas;
-    std::string eilute;
-    int eilutesNumeris = 0;
+    std::ofstream isvestis("url_adresai.txt");
+    if (!isvestis) {
+        std::cerr << "Klaida: nepavyko sukurti url_adresai.txt!" << std::endl;
+        return 1;
+    }
 
-    while (std::getline(ivestis, eilute)) {
-        eilutesNumeris++;
-        std::stringstream ss(eilute);
-        std::string nuskaitytasZodis;
-        
-        while (ss >> nuskaitytasZodis) {
-            std::string svarusZodis = isvalytiZodi(nuskaitytasZodis);
-            if (!svarusZodis.empty()) {
-                zodziuZodynas[svarusZodis].push_back(eilutesNumeris);
-            }
+    std::string nuskaitytasZodis;
+    while (ivestis >> nuskaitytasZodis) {
+        std::string isvalytas = apvalytiZodi(nuskaitytasZodis);
+        if (arTaiURL(isvalytas, tldSarasas)) {
+            isvestis << isvalytas << "\n";
         }
     }
+
     ivestis.close();
+    isvestis.close();
 
-    std::ofstream isvestis1("pasikartojimai.txt");
-    std::ofstream isvestis2("cross_reference.txt");
-
-    if (!isvestis1 || !isvestis2) {
-        std::cerr << "Klaida: Nepavyko sukurti rezultatu failu!" << std::endl;
-        return 1;
-    }
-
-    for (const auto& pora : zodziuZodynas) {
-        if (pora.second.size() > 1) {
-            isvestis1 << pora.first << " : " << pora.second.size() << "\n";
-
-            isvestis2 << pora.first << " : ";
-            for (size_t i = 0; i < pora.second.size(); ++i) {
-                isvestis2 << pora.second[i];
-                if (i < pora.second.size() - 1) {
-                    isvestis2 << ", ";
-                }
-            }
-            isvestis2 << "\n";
-        }
-    }
-
-    isvestis1.close();
-    isvestis2.close();
-
-    std::cout << "Darbas baigtas!" << std::endl;
+    std::cout << "Darbas baigtas! Rasti URL adresai issaugoti i 'url_adresai.txt'" << std::endl;
     return 0;
 }
