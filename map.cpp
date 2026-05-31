@@ -78,6 +78,6 @@ int main() {
     ivestis.close();
     isvestis.close();
 
-    std::cout << "Darbas baigtas! Rasti URL adresai issaugoti i 'url_adresai.txt'" << std::endl;
+    std::cout << "Darbas baigtas!" << std::endl;
     return 0;
 }
