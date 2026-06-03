@@ -1,11 +1,54 @@
 #include "utils.h"
-#include <cctype>
 
 std::string isvalytiZodi(const std::string& originalusZodis) {
     std::string isvalytas = "";
-    for (char c : originalusZodis) {
-        if (std::isalnum(c)) {
-            isvalytas += std::tolower(c);
+    
+    for (size_t i = 0; i < originalusZodis.length(); ++i) {
+        unsigned char c = originalusZodis[i];
+
+        if (c >= 'A' && c <= 'Z') {
+            isvalytas += static_cast<char>(c + 32); 
+        } else if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+            isvalytas += static_cast<char>(c);
+        }
+        
+        else if (c > 127) {
+            if (i + 1 < originalusZodis.length()) {
+                unsigned char next = originalusZodis[i + 1];
+
+                if (c == 0xD0) {
+                    if (next >= 0x90 && next <= 0x9F) { 
+                        isvalytas += static_cast<char>(0xD0);
+                        isvalytas += static_cast<char>(next + 0x20);
+                        i++; continue;
+                    } else if (next >= 0xA0 && next <= 0xAF) { 
+                        isvalytas += static_cast<char>(0xD1);
+                        isvalytas += static_cast<char>(next - 0x20);
+                        i++; continue;
+                    } else if (next == 0x81) { 
+                        isvalytas += static_cast<char>(0xD1);
+                        isvalytas += static_cast<char>(0x91);
+                        i++; continue;
+                    }
+                }
+
+                if (c == 0xC4) {
+                    if (next == 0x84 || next == 0x8C || next == 0x96 || next == 0x98 || next == 0xAE) { // Ą, Č, Ė, Ę, Į
+                        isvalytas += static_cast<char>(0xC4);
+                        isvalytas += static_cast<char>(next + 1);
+                        i++; continue;
+                    }
+                }
+                if (c == 0xC5) {
+                    if (next == 0xA0 || next == 0xAA || next == 0xB2 || next == 0xBD) { // Š, Ū, Ų, Ž
+                        isvalytas += static_cast<char>(0xC5);
+                        isvalytas += static_cast<char>(next + 1);
+                        i++; continue;
+                    }
+                }
+            }
+
+            isvalytas += static_cast<char>(c);
         }
     }
     return isvalytas;

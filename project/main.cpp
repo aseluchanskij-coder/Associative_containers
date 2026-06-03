@@ -10,7 +10,7 @@
 int main() {
     std::ifstream tldFailas("galunes.txt");
     if (!tldFailas) {
-        std::cerr << "Klaida: nerastas tld.txt failas!" << std::endl;
+        std::cerr << "Klaida: nerastas galunes.txt failas!" << std::endl;
         return 1;
     }
 
